@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
-const ChatPage = () => {
+const LetterPage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState([
     { 
       id: 1, 
@@ -11,11 +13,46 @@ const ChatPage = () => {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const [jobUrl, setJobUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isMessageLoading, setIsMessageLoading] = useState(false);
   const [cvFile, setCvFile] = useState(null);
   const [isCvUploaded, setIsCvUploaded] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+  const dropdownRef = useRef(null);
+  const navigate = useNavigate();
+  
+  // Vérifier si l'utilisateur est authentifié au chargement
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = localStorage.getItem('user');
+      if (!user) {
+        navigate('/login');
+      } else {
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+    
+    checkAuth();
+  }, [navigate]);
+  
+  // Récupérer les informations utilisateur depuis le localStorage
+  const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
+  
+  // Fermer le dropdown quand on clique ailleurs
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -67,11 +104,11 @@ const ChatPage = () => {
       setInputMessage('');
 
       // Simuler le chargement et la réponse du backend
-      setIsLoading(true);
+      setIsMessageLoading(true);
       
       // Simulation d'une réponse après un délai
       setTimeout(() => {
-        setIsLoading(false);
+        setIsMessageLoading(false);
         
         if (isCvUploaded) {
           addMessage('bot', genererLettre());
@@ -80,6 +117,11 @@ const ChatPage = () => {
         }
       }, 3000);
     }
+  };
+  
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    navigate('/');
   };
 
   const genererLettre = () => {
@@ -105,10 +147,31 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
 `;
   };
 
+  // Si la vérification est en cours, on affiche rien
+  if (isLoading) {
+    return null; // Ne rien afficher pendant la vérification
+  }
+
+  // Si l'utilisateur n'est pas authentifié, ne rien afficher (la redirection est déjà lancée)
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // Si l'utilisateur est authentifié, afficher la page complète
   return (
     <div className="h-screen flex overflow-hidden">
       {/* Panneau latéral - prenant toute la hauteur */}
       <aside className="w-full md:w-1/3 lg:w-1/4 bg-white dark:bg-gray-800 flex flex-col border-r border-gray-300 dark:border-gray-600">
+        {/* Logo en haut du panneau latéral */}
+        <div className="p-4">
+          <Link to="/dashboard" className="flex items-center">
+            <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm font-bold">C</span>
+            </div>
+            <h2 className="ml-2 text-base font-semibold text-gray-800 dark:text-white">CoverMyLetter</h2>
+          </Link>
+        </div>
+        
         {/* Contenu du panneau latéral - centré verticalement */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-center">
           <div>
@@ -183,7 +246,7 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
       {/* Zone principale avec chat et header */}
       <div className="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
         {/* Header de la zone principale */}
-        <header className="py-2 px-6 flex justify-between items-center bg-white dark:bg-gray-800 shadow-sm">
+        <header className="p-4 flex justify-between items-center bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
           {/* Navigation à gauche */}
           <div className="flex items-center space-x-4">
             <Link 
@@ -201,14 +264,57 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
           {/* Espace central flexible */}
           <div className="flex-1"></div>
           
-          {/* Logo à droite */}
-          <div className="p-2">
-            <Link to="/" className="flex items-center">
-              <div className="h-7 w-7 bg-indigo-600 rounded-lg flex items-center justify-center">
-                <span className="text-white text-sm font-bold">C</span>
+          {/* Menu utilisateur à droite */}
+          <div className="relative" ref={dropdownRef}>
+            <button 
+              className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-indigo-600 dark:hover:text-indigo-400 focus:outline-none"
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+            >
+              <div className="h-8 w-8 bg-indigo-100 dark:bg-indigo-800 rounded-full flex items-center justify-center mr-2">
+                <span className="text-indigo-600 dark:text-indigo-300">{userInfo.firstName?.[0] || 'U'}</span>
               </div>
-              <h2 className="ml-2 text-base font-semibold text-gray-800 dark:text-white">CoverMyLetter</h2>
-            </Link>
+              <span>{userInfo.firstName || 'Utilisateur'}</span>
+              <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            {/* Menu déroulant */}
+            {dropdownOpen && (
+              <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 z-10">
+                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                  <p className="text-sm leading-5 font-medium text-gray-900 dark:text-white truncate">
+                    {userInfo.firstName} {userInfo.lastName}
+                  </p>
+                  <p className="text-xs leading-5 text-gray-500 dark:text-gray-400 truncate">
+                    {userInfo.email}
+                  </p>
+                </div>
+                
+                <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
+                  <div className="flex justify-between items-center mb-2">
+                    <span>Crédits gratuits</span>
+                    <span className="font-medium">{userInfo.freeRequestsCount || 0}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span>Crédits payants</span>
+                    <span className="font-medium">{userInfo.paidRequestsCount || 0}</span>
+                  </div>
+                </div>
+                
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <div className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11.707 4.707a1 1 0 10-1.414-1.414L10 9.586 6.707 6.293a1 1 0 00-1.414 1.414L8.586 11l-3.293 3.293a1 1 0 101.414 1.414L10 12.414l3.293 3.293a1 1 0 001.414-1.414L11.414 11l3.293-3.293z" clipRule="evenodd" />
+                    </svg>
+                    Se déconnecter
+                  </div>
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -243,7 +349,7 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
                 )
               ))}
               
-              {isLoading && (
+              {isMessageLoading && (
                 <div className="flex items-center space-x-2 text-sm text-gray-500 pl-10">
                   <div className="animate-pulse flex space-x-1">
                     <div className="h-2 w-2 bg-indigo-400 rounded-full"></div>
@@ -344,4 +450,4 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
   );
 };
 
-export default ChatPage;
+export default LetterPage;

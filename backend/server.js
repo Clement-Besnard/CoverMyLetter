@@ -1,13 +1,34 @@
 const express = require('express');
 const app = express();
-const PORT = process.env.PORT || 3000;
+const cors = require('cors');
+const userRoutes = require('./routes/users.routes');
+const agentsRoutes = require('./routes/agents.routes');
 
+// Middleware pour parser le JSON
 app.use(express.json());
 
+// Middleware CORS pour permettre les requêtes depuis le frontend
+app.use(cors());
+
+// Routes
+app.use('/api/users', userRoutes);
+app.use('/api/agents', agentsRoutes);
+
+// Route de base pour vérifier que le serveur fonctionne
 app.get('/', (req, res) => {
-  res.send('Hello from Express!');
+  res.json({ message: 'API CoverMyLetter fonctionnelle' });
 });
 
+// Gestion des erreurs globale
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    message: 'Une erreur est survenue',
+    error: process.env.NODE_ENV === 'production' ? {} : err.message
+  });
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
+  console.log(`Serveur démarré sur http://localhost:${PORT}`);
 });

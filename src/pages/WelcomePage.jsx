@@ -1,7 +1,18 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const WelcomePage = () => {
+  const navigate = useNavigate();
+
+  // Vérifier si l'utilisateur est déjà connecté au chargement de la page
+  useEffect(() => {
+    const userInfo = localStorage.getItem('user');
+    if (userInfo) {
+      // Rediriger vers la page de chat si l'utilisateur est connecté
+      navigate('/dashboard');
+    }
+  }, [navigate]);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* En-tête */}
@@ -18,23 +29,23 @@ const WelcomePage = () => {
       <main className="flex-1 flex flex-col md:flex-row items-center justify-center px-6 md:px-16 py-12">
         <div className="md:w-1/2 md:pr-12 mb-10 md:mb-0">
           <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 dark:text-white mb-6 leading-tight">
-            CV et lettres <span className="text-indigo-600">d'impact</span> en quelques clics
+            Lettres de motivation <span className="text-indigo-600">d'impact</span> en quelques clics
           </h1>
           <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 max-w-md">
-            Maximisez vos chances de décrocher l'emploi de vos rêves avec des CV et lettres de motivation personnalisés générés par notre agent.
+            Maximisez vos chances de décrocher l'emploi de vos rêves avec des lettres de motivation personnalisées générées par notre agent.
           </p>
           <div className="flex flex-col sm:flex-row gap-4">
             <Link 
-              to="/create-cv"
+              to="/register"
               className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-lg hover:shadow-xl transition-all"
             >
-              Créer mon CV
+              Inscription
             </Link>
             <Link 
-              to="/chat"
+              to="/login"
               className="px-8 py-3 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-800 dark:text-white font-medium rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
             >
-              Assistant de lettre
+              Connexion
             </Link>
           </div>
         </div>
@@ -61,7 +72,7 @@ const WelcomePage = () => {
             <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
               <p className="text-gray-800 dark:text-gray-300 font-mono">
                 <span className="text-green-600 dark:text-green-400">CoverMyLetter &gt; </span> 
-                Super ! Je vais vous aider à créer un CV et une lettre de motivation adaptés aux attentes des recruteurs pour ce poste. Commençons par mettre en avant vos compétences en React, CSS et UX/UI...
+                Super ! Je vais vous aider à créer une lettre de motivation adaptée aux attentes des recruteurs pour ce poste. Commençons par mettre en avant vos compétences en React, CSS et UX/UI...
               </p>
             </div>
           </div>
@@ -69,7 +80,7 @@ const WelcomePage = () => {
       </main>
 
       {/* Section des fonctionnalités */}
-      <section className="py-12 bg-gray-50 dark:bg-gray-800">
+      <section className="py-16 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">Comment ça fonctionne</h2>
           
@@ -87,29 +98,29 @@ const WelcomePage = () => {
                 <span className="text-indigo-600 dark:text-indigo-300 text-xl font-bold">2</span>
               </div>
               <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Personnalisation</h3>
-              <p className="text-gray-600 dark:text-gray-300">Nous adaptons votre CV et lettre en fonction de votre expérience et des exigences spécifiques du poste.</p>
+              <p className="text-gray-600 dark:text-gray-300">Nous adaptons votre lettre en fonction de votre profil et des exigences spécifiques du poste.</p>
             </div>
             
             <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow">
               <div className="h-12 w-12 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
                 <span className="text-indigo-600 dark:text-indigo-300 text-xl font-bold">3</span>
               </div>
-              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Documents prêts à l'emploi</h3>
-              <p className="text-gray-600 dark:text-gray-300">Téléchargez vos documents optimisés et augmentez vos chances de décrocher un entretien.</p>
+              <h3 className="text-xl font-semibold mb-2 text-gray-800 dark:text-white">Document prêt à l'emploi</h3>
+              <p className="text-gray-600 dark:text-gray-300">Téléchargez votre lettre de motivation optimisée et augmentez vos chances de décrocher un entretien.</p>
             </div>
           </div>
         </div>
       </section>
       
-      {/* Nouvelle section sur la création de lettres de motivation */}
-      <section className="py-12 px-6 bg-white dark:bg-gray-900">
+      {/* Section sur la création de lettres de motivation */}
+      <section className="py-16 px-6 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">Lettres de motivation personnalisées</h2>
           <p className="text-lg text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
             Notre agent intelligent crée des lettres de motivation parfaitement adaptées à votre profil et à l'offre visée
           </p>
           
-          <div className="grid md:grid-cols-2 gap-12 items-center">
+          <div className="flex justify-center items-center">
             <div>
               <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-xl shadow-lg">
                 <h3 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Comment ça marche</h3>
@@ -118,7 +129,7 @@ const WelcomePage = () => {
                     <div className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center mt-1">
                       <span className="text-white text-xs font-bold">1</span>
                     </div>
-                    <p className="ml-3 text-gray-600 dark:text-gray-300">Importez votre CV ou créez-en un nouveau avec notre assistant</p>
+                    <p className="ml-3 text-gray-600 dark:text-gray-300">Téléchargez votre CV au format PDF</p>
                   </div>
                   <div className="flex items-start">
                     <div className="flex-shrink-0 h-6 w-6 rounded-full bg-indigo-500 flex items-center justify-center mt-1">
@@ -141,49 +152,152 @@ const WelcomePage = () => {
                 </div>
               </div>
             </div>
-            
-            <div>
-              <div className="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-800 dark:text-white">Lettre de motivation</h3>
-                  <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-xs px-2 py-1 rounded-full">
-                    Optimisée pour le poste
-                  </div>
+          </div>
+        </div>
+      </section>
+      
+      {/* Section des tarifs */}
+      <section className="py-16 px-6 bg-gray-50 dark:bg-gray-800">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center mb-6 text-gray-900 dark:text-white">Nos tarifs</h2>
+          <p className="text-lg text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">
+            Choisissez le forfait qui correspond à vos besoins
+          </p>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Premier forfait */}
+            <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 flex flex-col">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white text-center">Starter</h3>
+                <div className="mt-4 flex justify-center">
+                  <span className="text-5xl font-bold text-gray-900 dark:text-white">0,99€</span>
                 </div>
+                <p className="text-center text-gray-500 dark:text-gray-400 mt-2">Pour débuter</p>
+              </div>
+              
+              <div className="p-6 flex-1 flex flex-col">
+                <ul className="space-y-3 mb-auto">
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">10 lettres de motivation</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Format exportable</span>
+                  </li>
+                </ul>
                 
-                <div className="prose dark:prose-invert">
-                  <p className="text-gray-800 dark:text-gray-300">
-                    Madame, Monsieur,
-                  </p>
-                  <p className="text-gray-800 dark:text-gray-300">
-                    Je suis très intéressé par l'offre de Développeur React publiée sur LinkedIn. Avec une solide expérience en développement front-end et une passion pour la création d'interfaces utilisateur dynamiques, je suis convaincu de pouvoir contribuer efficacement à votre équipe.
-                  </p>
-                  <p className="text-gray-800 dark:text-gray-300">
-                    Au cours de mes précédentes expériences, j'ai développé des applications web performantes en utilisant React, Redux et d'autres technologies modernes. Mon approche axée sur les résultats et ma capacité à travailler en étroite collaboration avec les équipes de conception et de back-end m'ont permis de livrer des projets de haute qualité dans les délais impartis.
-                  </p>
-                  <p className="text-gray-800 dark:text-gray-300">
-                    Je serais ravi de pouvoir discuter plus en détail de ma candidature lors d'un entretien. Je vous remercie pour votre temps et considération.
-                  </p>
-                  <p className="text-gray-800 dark:text-gray-300">
-                    Cordialement,
-                  </p>
-                  <p className="text-gray-800 dark:text-gray-300 font-semibold">
-                    [Votre Nom]
-                  </p>
+                <button className="mt-8 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition-colors">
+                  Choisir ce forfait
+                </button>
+              </div>
+            </div>
+            
+            {/* Deuxième forfait - Recommandé */}
+            <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 flex flex-col relative ring-2 ring-indigo-500 dark:ring-indigo-400">
+              <div className="absolute top-0 right-0">
+                <div className="bg-indigo-500 text-white text-xs px-3 py-1 rounded-bl-lg font-medium">
+                  RECOMMANDÉ
                 </div>
+              </div>
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white text-center">Standard</h3>
+                <div className="mt-4 flex justify-center">
+                  <span className="text-5xl font-bold text-gray-900 dark:text-white">1,99€</span>
+                </div>
+                <p className="text-center text-gray-500 dark:text-gray-400 mt-2">Le plus populaire</p>
+              </div>
+              
+              <div className="p-6 flex-1 flex flex-col">
+                <ul className="space-y-3 mb-auto">
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300"><strong>30 lettres de motivation</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Format exportable</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Personnalisation avancée</span>
+                  </li>
+                </ul>
+                
+                <button className="mt-8 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition-colors">
+                  Choisir ce forfait
+                </button>
+              </div>
+            </div>
+            
+            {/* Troisième forfait */}
+            <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden transform transition-transform hover:scale-105 flex flex-col">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white text-center">Premium</h3>
+                <div className="mt-4 flex justify-center">
+                  <span className="text-5xl font-bold text-gray-900 dark:text-white">4,99€</span>
+                </div>
+                <p className="text-center text-gray-500 dark:text-gray-400 mt-2">Recherche intensive</p>
+              </div>
+              
+              <div className="p-6 flex-1 flex flex-col">
+                <ul className="space-y-3 mb-auto">
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300"><strong>100 lettres de motivation</strong></span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Format exportable</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Personnalisation avancée</span>
+                  </li>
+                  <li className="flex items-start">
+                    <svg className="h-5 w-5 text-green-500 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                    <span className="text-gray-700 dark:text-gray-300">Analyse de mots-clés</span>
+                  </li>
+                </ul>
+                
+                <button className="mt-8 w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition-colors">
+                  Choisir ce forfait
+                </button>
               </div>
             </div>
           </div>
+          
+          <p className="text-center mt-8 text-sm text-gray-500 dark:text-gray-400">
+            Tous les prix incluent la TVA. Paiement sécurisé.
+          </p>
         </div>
       </section>
 
       {/* Témoignages */}
-      <section className="py-12 px-6">
+      <section className="py-16 px-6 bg-white dark:bg-gray-900">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-3xl font-bold text-center mb-12 text-gray-900 dark:text-white">Témoignages de candidats</h2>
           
           <div className="grid md:grid-cols-2 gap-8">
-            <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow">
+            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow">
               <div className="flex items-center mb-4">
                 <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full"></div>
                 <div className="ml-4">
@@ -191,10 +305,10 @@ const WelcomePage = () => {
                   <p className="text-gray-500 dark:text-gray-400">Designer UX/UI</p>
                 </div>
               </div>
-              <p className="text-gray-600 dark:text-gray-300">"Après 3 mois de recherche sans succès, j'ai utilisé CoverMyLetter pour adapter mon CV. J'ai décroché 4 entretiens en 2 semaines et une offre d'emploi !"</p>
+              <p className="text-gray-600 dark:text-gray-300">"Après 3 mois de recherche sans succès, j'ai utilisé CoverMyLetter pour adapter ma lettre de motivation. J'ai décroché 4 entretiens en 2 semaines et une offre d'emploi !"</p>
             </div>
             
-            <div className="bg-white dark:bg-gray-700 p-6 rounded-lg shadow">
+            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow">
               <div className="flex items-center mb-4">
                 <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full"></div>
                 <div className="ml-4">
@@ -209,22 +323,11 @@ const WelcomePage = () => {
       </section>
 
       {/* Pied de page */}
-      <footer className="py-6 px-8 bg-white dark:bg-gray-800 shadow-inner">
+      <footer className="py-6 px-8 bg-gray-50 shadow-inner dark:bg-gray-900 flex pt-20">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-600 dark:text-gray-400 text-sm">
-            © 2023 CoverMyLetter. Tous droits réservés.
+            © 2025 CoverMyLetter. Tous droits réservés.
           </p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-              Confidentialité
-            </a>
-            <a href="#" className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-              Conditions
-            </a>
-            <a href="#" className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-white">
-              Contact
-            </a>
-          </div>
         </div>
       </footer>
     </div>
