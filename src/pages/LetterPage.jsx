@@ -68,6 +68,11 @@ const LetterPage = () => {
       setCvFile(file);
       setIsCvUploaded(true);
       addMessage('user', `J'ai téléversé mon CV: ${file.name}`);
+      
+      // Si une URL d'offre d'emploi est déjà présente, suggérer à l'utilisateur de générer la lettre
+      if (jobUrl.trim() !== '') {
+        addMessage('bot', "Parfait ! Vous avez téléversé votre CV et indiqué l'URL de l'offre d'emploi. Cliquez sur 'Envoyer' pour générer votre lettre de motivation.");
+      }
     } else {
       addMessage('bot', "Veuillez téléverser un fichier PDF valide.");
     }
@@ -103,48 +108,84 @@ const LetterPage = () => {
       setJobUrl('');
       setInputMessage('');
 
-      // Simuler le chargement et la réponse du backend
+      // Indiquer que le message est en cours de chargement
       setIsMessageLoading(true);
       
-      // Simulation d'une réponse après un délai
-      setTimeout(() => {
-        setIsMessageLoading(false);
-        
-        if (isCvUploaded) {
-          addMessage('bot', genererLettre());
+      try {
+        // Vérifier si nous avons un CV et une URL d'offre d'emploi
+        if (isCvUploaded && (jobUrl.trim() !== '' || userMessage.includes('http'))) {
+          // Préparer les données pour l'appel API
+          const formData = new FormData();
+          formData.append('cv', cvFile);
+          
+          // Extraire l'URL de l'offre d'emploi du message ou utiliser jobUrl
+          const extractedUrl = jobUrl.trim() || userMessage.match(/https?:\/\/[^\s]+/)?.[0] || '';
+          formData.append('jobUrl', extractedUrl);
+          
+          // Récupérer l'utilisateur connecté
+          const user = JSON.parse(localStorage.getItem('user'));
+          
+          // Vérifier si l'utilisateur a encore des crédits
+          if (user.freeRequestsCount <= 0 && user.paidRequestsCount <= 0) {
+            setIsMessageLoading(false);
+            addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à générer des lettres de motivation.");
+            return;
+          }
+          
+          // Appel à l'API backend
+          const response = await fetch('http://localhost:3000/api/agents/generate', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!response.ok) {
+            throw new Error('Erreur lors de la génération de la lettre de motivation');
+          }
+          
+          const data = await response.json();
+          
+          // Décrémenter le compteur de crédits
+          let updatedUser = {...user};
+          if (user.freeRequestsCount > 0) {
+            updatedUser.freeRequestsCount -= 1;
+          } else if (user.paidRequestsCount > 0) {
+            updatedUser.paidRequestsCount -= 1;
+          }
+          
+          // Mettre à jour l'utilisateur dans le localStorage
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // Mettre à jour l'utilisateur dans la base de données
+          await fetch(`http://localhost:3000/api/users/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              freeRequestsCount: updatedUser.freeRequestsCount,
+              paidRequestsCount: updatedUser.paidRequestsCount
+            })
+          });
+          
+          // Afficher la lettre générée
+          setIsMessageLoading(false);
+          addMessage('bot', data.coverLetter);
         } else {
+          // Afficher un message d'erreur si manque d'infos
+          setIsMessageLoading(false);
           addMessage('bot', "J'ai besoin de votre CV et de l'URL de l'offre d'emploi pour générer une lettre de motivation personnalisée.");
         }
-      }, 3000);
+      } catch (error) {
+        console.error(error);
+        setIsMessageLoading(false);
+        addMessage('bot', "Une erreur s'est produite lors de la génération de la lettre de motivation. Veuillez réessayer.");
+      }
     }
   };
   
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/');
-  };
-
-  const genererLettre = () => {
-    return `
-**Lettre de Motivation Générée**
-
-Madame, Monsieur,
-
-C'est avec un vif intérêt que je me permets de vous adresser ma candidature pour le poste mentionné dans votre annonce. Après analyse approfondie du profil recherché, je suis convaincu que mon parcours et mes compétences correspondent parfaitement aux exigences du poste.
-
-Au cours de mes expériences professionnelles précédentes, j'ai développé une solide expertise en développement React et front-end moderne. J'ai notamment :
-- Contribué au développement d'interfaces utilisateur dynamiques et réactives
-- Travaillé en équipe sur des projets d'envergure avec des délais serrés
-- Optimisé les performances et l'expérience utilisateur d'applications web complexes
-
-Particulièrement intéressé par votre entreprise et ses projets innovants, je souhaite mettre à profit mes connaissances techniques et ma passion pour le développement web au service de votre équipe.
-
-Je me tiens à votre disposition pour un entretien où nous pourrons échanger plus en détail sur ma candidature et ma motivation.
-
-Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
-
-[Votre Nom]
-`;
   };
 
   // Si la vérification est en cours, on affiche rien

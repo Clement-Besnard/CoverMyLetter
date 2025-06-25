@@ -1,8 +1,13 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const connectDB = require('./config/database');
 const userRoutes = require('./routes/users.routes');
 const agentsRoutes = require('./routes/agents.routes');
+require('dotenv').config();
+
+// Connexion à MongoDB
+connectDB();
 
 // Middleware pour parser le JSON
 app.use(express.json());
