@@ -142,7 +142,7 @@ exports.generateCoverLetter = async (req, res) => {
 
 exports.modifyLetter = async (req, res) => {
   try {
-    if (!req.body.letter || !req.body.query) {
+    if (!req.body.query) {
       return res.status(400).json({ message: 'La lettre et la requête sont requises' });
     }
     
@@ -171,12 +171,7 @@ exports.modifyLetter = async (req, res) => {
     const payload = {
       input_value: req.body.query,
       output_type: "chat",
-      input_type: "chat",
-      tweaks: {
-        'Text-KmLxZ': {
-          text: req.body.letter
-        }
-      }
+      input_type: "chat"
     };
 
     const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/modifymyletter`, payload, {

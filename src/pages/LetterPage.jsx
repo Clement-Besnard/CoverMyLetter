@@ -247,7 +247,7 @@ const LetterPage = () => {
             },
             body: JSON.stringify({
               letter: lastLetterMessage,
-              query: userMessage,
+              query: `${lastLetterMessage}\n\n${userMessage}`,
               userId: user._id
             })
           });
@@ -304,11 +304,6 @@ const LetterPage = () => {
     
     // Extraire la date actuelle et le titre
     const today = new Date().toLocaleDateString('fr-FR');
-    const title = "Lettre de motivation";
-    
-    // Ajouter le titre avec une police plus grande
-    doc.setFontSize(16);
-    doc.text(title, margin, margin);
     
     // Réinitialiser la taille de police pour le contenu
     doc.setFontSize(11);
