@@ -23,6 +23,34 @@ exports.getUserById = async (req, res) => {
   }
 };
 
+// Connexion utilisateur
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Vérifier que l'email et le mot de passe sont fournis
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email et mot de passe requis' });
+    }
+
+    // Chercher l'utilisateur par email
+    const user = await User.findOne({ email });
+    
+    // Si l'utilisateur n'existe pas ou le mot de passe ne correspond pas
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: 'Email ou mot de passe incorrect' });
+    }
+
+    // Créer un objet utilisateur sans le mot de passe pour la réponse
+    const userResponse = user.toObject();
+    delete userResponse.password;
+
+    res.json(userResponse);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
 // Créer un nouvel utilisateur
 exports.createUser = async (req, res) => {
   try {

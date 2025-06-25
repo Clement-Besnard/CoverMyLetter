@@ -9,4 +9,7 @@ router.post('/', userController.createUser);
 router.put('/:id', userController.updateUser);
 router.delete('/:id', userController.deleteUser);
 
+// Route d'authentification
+router.post('/auth/login', userController.loginUser);
+
 module.exports = router;
