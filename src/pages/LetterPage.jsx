@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable'; // Pour une meilleure mise en page
 
 const LetterPage = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -235,6 +237,52 @@ const LetterPage = () => {
     navigate('/');
   };
 
+  // Fonction pour télécharger le contenu en PDF
+  const handleDownloadPDF = (content) => {
+    // Créer une instance de jsPDF
+    const doc = new jsPDF();
+    
+    // Configurer les marges et la police
+    const margin = 20;
+    doc.setFont('helvetica');
+    doc.setFontSize(11);
+    
+    // Extraire la date actuelle et le titre
+    const today = new Date().toLocaleDateString('fr-FR');
+    const title = "Lettre de motivation";
+    
+    // Ajouter le titre avec une police plus grande
+    doc.setFontSize(16);
+    doc.text(title, margin, margin);
+    
+    // Réinitialiser la taille de police pour le contenu
+    doc.setFontSize(11);
+    
+    // Ajouter la date dans le coin supérieur droit
+    doc.text(today, doc.internal.pageSize.width - margin - doc.getTextWidth(today), margin);
+    
+    // Extraire le contenu principal sans les instructions initiales
+    let cleanContent = content;
+    
+    // Si le contenu contient des instructions initiales, les supprimer
+    const instructionsEndIndex = content.indexOf('{Document}');
+    if (instructionsEndIndex > -1) {
+      cleanContent = content.substring(instructionsEndIndex + 10); // +10 pour sauter '{Document}'
+    }
+    
+    // Nettoyer le contenu des balises et identifiants comme {URL}
+    cleanContent = cleanContent
+      .replace(/{URL}/g, '')
+      .replace(/{Document}/g, '');
+    
+    // Ajouter le contenu principal avec retour à la ligne automatique (splitTextToSize)
+    const textLines = doc.splitTextToSize(cleanContent, doc.internal.pageSize.width - 2 * margin);
+    doc.text(textLines, margin, margin + 10);
+    
+    // Télécharger le PDF
+    doc.save('lettre_de_motivation.pdf');
+  };
+  
   // Si la vérification est en cours, on affiche rien
   if (isLoading) {
     return null; // Ne rien afficher pendant la vérification
@@ -442,6 +490,21 @@ const LetterPage = () => {
                     <div className="prose dark:prose-invert whitespace-pre-line text-sm text-gray-800 dark:text-gray-200 pl-10">
                       {message.content}
                     </div>
+                    
+                    {/* Bouton de téléchargement pour les messages qui semblent être des lettres de motivation */}
+                    {message.content && message.content.length > 300 && !message.content.startsWith("Bienvenue") && (
+                      <div className="flex pl-10 mt-3">
+                        <button
+                          onClick={() => handleDownloadPDF(message.content)}
+                          className="flex items-center px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded-lg transition-colors"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                          </svg>
+                          Télécharger en PDF
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div key={message.id} className="flex items-start justify-end mb-3">
