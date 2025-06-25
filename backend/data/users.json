@@ -19,5 +19,15 @@
     "freeRequestsCount": 5,
     "paidRequestsCount": 0,
     "createdAt": "2025-06-24T20:15:56.382Z"
+  },
+  {
+    "id": 1750845091338,
+    "firstName": "test",
+    "lastName": "test",
+    "email": "test@test.com",
+    "password": "test",
+    "freeRequestsCount": 5,
+    "paidRequestsCount": 0,
+    "createdAt": "2025-06-25T09:51:31.338Z"
   }
 ]
