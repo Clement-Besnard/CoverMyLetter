@@ -1,0 +1,33 @@
+[
+  {
+    "id": 1750786106461,
+    "firstName": "Clément",
+    "lastName": "Besnard",
+    "email": "clems.2048@gmail.com",
+    "password": "clems",
+    "freeRequestsCount": 4,
+    "paidRequestsCount": 0,
+    "createdAt": "2025-06-24T17:28:26.462Z",
+    "updatedAt": "2025-06-24T17:33:34.426Z"
+  },
+  {
+    "id": 1750796156382,
+    "firstName": "Mathieu",
+    "lastName": "Crespin",
+    "email": "mathieu.crespin@gmail.com",
+    "password": "mathieu",
+    "freeRequestsCount": 5,
+    "paidRequestsCount": 0,
+    "createdAt": "2025-06-24T20:15:56.382Z"
+  },
+  {
+    "id": 1750845091338,
+    "firstName": "test",
+    "lastName": "test",
+    "email": "test@test.com",
+    "password": "test",
+    "freeRequestsCount": 5,
+    "paidRequestsCount": 0,
+    "createdAt": "2025-06-25T09:51:31.338Z"
+  }
+]

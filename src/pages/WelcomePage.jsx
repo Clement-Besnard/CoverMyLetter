@@ -325,8 +325,8 @@ const WelcomePage = () => {
                   className="h-12 w-12 rounded-full object-cover"
                 />
                 <div className="ml-4">
-                  <h4 className="font-semibold text-gray-800 dark:text-white">Ewen Segui</h4>
-                  <p className="text-gray-500 dark:text-gray-400">En recherche d'alternance</p>
+                  <h4 className="font-semibold text-gray-800 dark:text-white">Thomas Ferret</h4>
+                  <p className="text-gray-500 dark:text-gray-400">M1 Journalisme et Photographie</p>
                 </div>
               </div>
               <p className="text-gray-600 dark:text-gray-300">"À mon retour de mon séjour aux États-Unis, je me suis fais virer de mon école. J'ai donc du chercher du travail le plus rapidement possible et CoverMyLetter m'a permis de gagner beaucoup de temps sur la rédaction des lettres de motivation."</p>
