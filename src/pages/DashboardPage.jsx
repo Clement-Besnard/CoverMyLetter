@@ -51,36 +51,37 @@ const DashboardPage = () => {
     setIsPurchasing(true);
     
     try {
-      // Simuler une requête d'achat
-      // En production, vous devriez intégrer un système de paiement comme Stripe
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simuler délai
-      
       // Récupérer l'utilisateur connecté
       const user = JSON.parse(localStorage.getItem('user'));
       
-      // Mettre à jour le nombre de crédits
-      const updatedUser = {
-        ...user,
-        paidRequestsCount: (user.paidRequestsCount || 0) + amount
-      };
+      // Vérification de sécurité pour l'ID utilisateur
+      if (!user || !user._id) {
+        console.error("ID utilisateur introuvable");
+        setIsPurchasing(false);
+        alert("Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
+        navigate('/login');
+        return;
+      }
       
-      // Mettre à jour l'utilisateur dans la base de données
-      const response = await fetch(`http://localhost:3000/api/users/${user.id}`, {
-        method: 'PUT',
+      // Appel API pour acheter des crédits - utiliser _id au lieu de id
+      const response = await fetch(`http://localhost:3000/api/users/${user._id}/purchase`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          paidRequestsCount: updatedUser.paidRequestsCount
-        })
+        body: JSON.stringify({ amount })
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour des crédits');
+        throw new Error('Erreur lors de l\'achat de crédits');
       }
       
+      const data = await response.json();
+      
       // Mettre à jour l'utilisateur dans le localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       
       // Fermer la carte des forfaits
       setShowPlans(false);

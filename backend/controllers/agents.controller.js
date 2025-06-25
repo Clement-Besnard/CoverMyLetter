@@ -36,6 +36,27 @@ exports.generateCoverLetter = async (req, res) => {
     if (!req.body.jobUrl) {
       return res.status(400).json({ message: 'Veuillez fournir l\'URL de l\'offre d\'emploi' });
     }
+    
+    // Vérifier si l'utilisateur a un ID dans la requête
+    if (!req.body.userId) {
+      return res.status(400).json({ message: 'ID utilisateur manquant' });
+    }
+    
+    // Récupérer l'utilisateur depuis la base de données
+    const User = require('../models/users.model');
+    const user = await User.findById(req.body.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Vérifier si l'utilisateur a des crédits
+    if (user.freeRequestsCount <= 0 && user.paidRequestsCount <= 0) {
+      return res.status(403).json({ 
+        message: 'Crédits insuffisants',
+        insufficientCredits: true
+      });
+    }
 
     // 1. Créer un FormData pour uploader le fichier
     const formData = new FormData();
@@ -80,14 +101,36 @@ exports.generateCoverLetter = async (req, res) => {
       }
     });
 
-    // 4. Extraire et renvoyer le message généré
+    // 4. Extraire le message généré
     const coverLetter = runResponse.data.outputs?.[0]?.outputs?.[0]?.results?.message?.data?.text;
     
     if (!coverLetter) {
       return res.status(500).json({ message: 'Échec de la génération de la lettre de motivation' });
     }
 
-    res.json({ coverLetter });
+    // 5. Décrémenter les crédits de l'utilisateur
+    if (user.freeRequestsCount > 0) {
+      user.freeRequestsCount -= 1;
+    } else if (user.paidRequestsCount > 0) {
+      user.paidRequestsCount -= 1;
+    }
+    
+    // 6. Sauvegarder l'utilisateur
+    await user.save();
+
+    // 7. Renvoyer la lettre et l'utilisateur mis à jour
+    res.json({ 
+      coverLetter,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        freeRequestsCount: user.freeRequestsCount,
+        paidRequestsCount: user.paidRequestsCount
+      }
+    });
+    
   } catch (error) {
     console.error('Erreur lors de la génération de la lettre:', error);
     res.status(500).json({ 

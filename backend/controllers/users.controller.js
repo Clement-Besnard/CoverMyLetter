@@ -42,9 +42,15 @@ exports.loginUser = async (req, res) => {
     }
 
     // Créer un objet utilisateur sans le mot de passe pour la réponse
-    const userResponse = user.toObject();
-    delete userResponse.password;
-
+    const userResponse = {
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      freeRequestsCount: user.freeRequestsCount,
+      paidRequestsCount: user.paidRequestsCount
+    };
+    
     res.json(userResponse);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -138,6 +144,47 @@ exports.deleteUser = async (req, res) => {
     }
 
     res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// Acheter des crédits
+exports.purchaseCredits = async (req, res) => {
+  try {
+    const { amount } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ message: 'Montant invalide' });
+    }
+    
+    const user = await User.findById(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // En production, il faudrait intégrer un système de paiement
+    // comme Stripe et vérifier que le paiement a bien été effectué
+    
+    // Mettre à jour le compteur de crédits
+    user.paidRequestsCount = (user.paidRequestsCount || 0) + amount;
+    
+    // Sauvegarder les modifications
+    await user.save();
+    
+    res.json({
+      success: true,
+      message: `${amount} crédits ajoutés avec succès`,
+      user: {
+        _id: user._id, // Utiliser _id au lieu de id pour la cohérence
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        freeRequestsCount: user.freeRequestsCount,
+        paidRequestsCount: user.paidRequestsCount
+      }
+    });z
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

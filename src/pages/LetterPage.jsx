@@ -65,36 +65,28 @@ const LetterPage = () => {
     setIsPurchasing(true);
     
     try {
-      // Simuler une requête d'achat
-      // En production, vous devriez intégrer un système de paiement comme Stripe
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simuler délai
-      
       // Récupérer l'utilisateur connecté
       const user = JSON.parse(localStorage.getItem('user'));
       
-      // Mettre à jour le nombre de crédits
-      const updatedUser = {
-        ...user,
-        paidRequestsCount: (user.paidRequestsCount || 0) + amount
-      };
-      
-      // Mettre à jour l'utilisateur dans la base de données
-      const response = await fetch(`http://localhost:3000/api/users/${user.id}`, {
-        method: 'PUT',
+      // Appel API pour acheter des crédits - utiliser _id au lieu de id
+      const response = await fetch(`http://localhost:3000/api/users/${user._id}/purchase`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          paidRequestsCount: updatedUser.paidRequestsCount
-        })
+        body: JSON.stringify({ amount })
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de la mise à jour des crédits');
+        throw new Error('Erreur lors de l\'achat de crédits');
       }
       
+      const data = await response.json();
+      
       // Mettre à jour l'utilisateur dans le localStorage
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      if (data.user) {
+        localStorage.setItem('user', JSON.stringify(data.user));
+      }
       
       // Afficher un message de succès
       addMessage('bot', `Félicitations ! Vous avez acheté ${amount} crédits pour ${price}€. Vos crédits ont été ajoutés à votre compte.`);
@@ -139,10 +131,10 @@ const LetterPage = () => {
 
   const addMessage = (type, content) => {
     const newMessage = {
-      id: messages.length + 1,
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       type,
       content,
-      timestamp: new Date()  // Ajouter un timestamp réel
+      timestamp: new Date()
     };
     setMessages(prevMessages => [...prevMessages, newMessage]);
   };
@@ -162,7 +154,7 @@ const LetterPage = () => {
       // Réinitialiser les champs
       setJobUrl('');
       setInputMessage('');
-
+  
       // Indiquer que le message est en cours de chargement
       setIsMessageLoading(true);
       
@@ -179,20 +171,36 @@ const LetterPage = () => {
           
           // Récupérer l'utilisateur connecté
           const user = JSON.parse(localStorage.getItem('user'));
-          
-          // Vérifier si l'utilisateur a encore des crédits
-          if (user.freeRequestsCount <= 0 && user.paidRequestsCount <= 0) {
+
+          // Vérification de sécurité pour l'ID
+          if (!user || !user._id) {
             setIsMessageLoading(false);
-            addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à générer des lettres de motivation.");
-            setShowPlans(true); // Afficher automatiquement les plans
+            addMessage('bot', "Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
+            setTimeout(() => navigate('/login'), 3000);
             return;
           }
+
+          // Utiliser _id partout de manière cohérente
+          formData.append('userId', user._id);
           
-          // Appel à l'API backend
+          // Appel à l'API backend - la vérification des crédits se fait côté serveur
           const response = await fetch('http://localhost:3000/api/agents/generate', {
             method: 'POST',
             body: formData
           });
+          
+          // Traiter la réponse
+          if (response.status === 403) {
+            // Crédits insuffisants
+            const errorData = await response.json();
+            setIsMessageLoading(false);
+            
+            if (errorData.insufficientCredits) {
+              addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à générer des lettres de motivation.");
+              setShowPlans(true); // Afficher automatiquement les plans
+            }
+            return;
+          }
           
           if (!response.ok) {
             throw new Error('Erreur lors de la génération de la lettre de motivation');
@@ -200,32 +208,15 @@ const LetterPage = () => {
           
           const data = await response.json();
           
-          // Décrémenter le compteur de crédits
-          let updatedUser = {...user};
-          if (user.freeRequestsCount > 0) {
-            updatedUser.freeRequestsCount -= 1;
-          } else if (user.paidRequestsCount > 0) {
-            updatedUser.paidRequestsCount -= 1;
+          // Mettre à jour l'utilisateur dans le localStorage avec les données mises à jour
+          if (data.user) {
+            localStorage.setItem('user', JSON.stringify(data.user));
           }
-          
-          // Mettre à jour l'utilisateur dans le localStorage
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-          
-          // Mettre à jour l'utilisateur dans la base de données
-          await fetch(`http://localhost:3000/api/users/${user.id}`, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              freeRequestsCount: updatedUser.freeRequestsCount,
-              paidRequestsCount: updatedUser.paidRequestsCount
-            })
-          });
           
           // Afficher la lettre générée
           setIsMessageLoading(false);
           addMessage('bot', data.coverLetter);
+          
         } else {
           // Afficher un message d'erreur si manque d'infos
           setIsMessageLoading(false);
@@ -419,8 +410,8 @@ const LetterPage = () => {
                   className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
                   <div className="flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11.707 4.707a1 1 0 10-1.414-1.414L10 9.586 6.707 6.293a1 1 0 00-1.414 1.414L8.586 11l-3.293 3.293a1 1 0 101.414 1.414L10 12.414l3.293 3.293a1 1 0 001.414-1.414L11.414 11l3.293-3.293z" clipRule="evenodd" />
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
                     Se déconnecter
                   </div>
