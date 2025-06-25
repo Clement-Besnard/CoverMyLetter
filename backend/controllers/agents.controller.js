@@ -139,3 +139,88 @@ exports.generateCoverLetter = async (req, res) => {
     });
   }
 };
+
+exports.modifyLetter = async (req, res) => {
+  try {
+    if (!req.body.letter || !req.body.query) {
+      return res.status(400).json({ message: 'La lettre et la requête sont requises' });
+    }
+    
+    // Vérifier si l'utilisateur a un ID dans la requête
+    if (!req.body.userId) {
+      return res.status(400).json({ message: 'ID utilisateur manquant' });
+    }
+    
+    // Récupérer l'utilisateur depuis la base de données
+    const User = require('../models/users.model');
+    const user = await User.findById(req.body.userId);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    
+    // Vérifier si l'utilisateur a des crédits
+    if (user.freeRequestsCount <= 0 && user.paidRequestsCount <= 0) {
+      return res.status(403).json({ 
+        message: 'Crédits insuffisants',
+        insufficientCredits: true
+      });
+    }
+
+    // Appel à l'endpoint de modification de lettre
+    const payload = {
+      input_value: req.body.query,
+      output_type: "chat",
+      input_type: "chat",
+      tweaks: {
+        'Text-KmLxZ': {
+          text: req.body.letter
+        }
+      }
+    };
+
+    const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/modifymyletter`, payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': API_KEY
+      }
+    });
+
+    // Extraire le message généré
+    const modifiedLetter = runResponse.data.outputs?.[0]?.outputs?.[0]?.results?.message?.data?.text;
+    
+    if (!modifiedLetter) {
+      return res.status(500).json({ message: 'Échec de la modification de la lettre de motivation' });
+    }
+
+    // Décrémenter les crédits de l'utilisateur
+    if (user.freeRequestsCount > 0) {
+      user.freeRequestsCount -= 1;
+    } else if (user.paidRequestsCount > 0) {
+      user.paidRequestsCount -= 1;
+    }
+    
+    // Sauvegarder l'utilisateur
+    await user.save();
+
+    // Renvoyer la lettre modifiée et l'utilisateur mis à jour
+    res.json({ 
+      modifiedLetter,
+      user: {
+        _id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        freeRequestsCount: user.freeRequestsCount,
+        paidRequestsCount: user.paidRequestsCount
+      }
+    });
+    
+  } catch (error) {
+    console.error('Erreur lors de la modification de la lettre:', error);
+    res.status(500).json({ 
+      message: 'Erreur lors de la modification de la lettre de motivation',
+      error: error.message 
+    });
+  }
+};

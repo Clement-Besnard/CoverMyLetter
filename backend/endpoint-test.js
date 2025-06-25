@@ -1,9 +1,7 @@
 const payload = {
-  "input_value": "hello world!",
+  "input_value": `Quel est le nom de celui qui a écrit la lettre ?`,
   "output_type": "chat",
-  "input_type": "chat",
-  // Optional: Use session tracking if needed
-  "session_id": "user_1"
+  "input_type": "chat"
 };
 
 const options = {

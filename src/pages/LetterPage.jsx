@@ -156,13 +156,25 @@ const LetterPage = () => {
       // Réinitialiser les champs
       setJobUrl('');
       setInputMessage('');
-  
+
       // Indiquer que le message est en cours de chargement
       setIsMessageLoading(true);
       
       try {
-        // Vérifier si nous avons un CV et une URL d'offre d'emploi
+        // Récupérer l'utilisateur connecté
+        const user = JSON.parse(localStorage.getItem('user'));
+
+        // Vérification de sécurité pour l'ID
+        if (!user || !user._id) {
+          setIsMessageLoading(false);
+          addMessage('bot', "Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
+          setTimeout(() => navigate('/login'), 3000);
+          return;
+        }
+
+        // Vérifier si nous avons un CV et une URL d'offre d'emploi pour génération initiale
         if (isCvUploaded && (jobUrl.trim() !== '' || userMessage.includes('http'))) {
+          // Code existant pour la génération initiale de la lettre
           // Préparer les données pour l'appel API
           const formData = new FormData();
           formData.append('cv', cvFile);
@@ -170,19 +182,6 @@ const LetterPage = () => {
           // Extraire l'URL de l'offre d'emploi du message ou utiliser jobUrl
           const extractedUrl = jobUrl.trim() || userMessage.match(/https?:\/\/[^\s]+/)?.[0] || '';
           formData.append('jobUrl', extractedUrl);
-          
-          // Récupérer l'utilisateur connecté
-          const user = JSON.parse(localStorage.getItem('user'));
-
-          // Vérification de sécurité pour l'ID
-          if (!user || !user._id) {
-            setIsMessageLoading(false);
-            addMessage('bot', "Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
-            setTimeout(() => navigate('/login'), 3000);
-            return;
-          }
-
-          // Utiliser _id partout de manière cohérente
           formData.append('userId', user._id);
           
           // Appel à l'API backend - la vérification des crédits se fait côté serveur
@@ -191,7 +190,7 @@ const LetterPage = () => {
             body: formData
           });
           
-          // Traiter la réponse
+          // Traitement de la réponse comme avant...
           if (response.status === 403) {
             // Crédits insuffisants
             const errorData = await response.json();
@@ -219,15 +218,71 @@ const LetterPage = () => {
           setIsMessageLoading(false);
           addMessage('bot', data.coverLetter);
           
-        } else {
+        } else if (!isCvUploaded) {
           // Afficher un message d'erreur si manque d'infos
           setIsMessageLoading(false);
           addMessage('bot', "J'ai besoin de votre CV et de l'URL de l'offre d'emploi pour générer une lettre de motivation personnalisée.");
+        } else {
+          // NOUVEAU CODE: Traitement des modifications de lettre existante
+          // Recherche de la dernière lettre générée dans les messages
+          let lastLetterMessage = null;
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].type === 'bot' && messages[i].content.length > 300) {
+              lastLetterMessage = messages[i].content;
+              break;
+            }
+          }
+          
+          if (!lastLetterMessage) {
+            setIsMessageLoading(false);
+            addMessage('bot', "Je n'ai pas trouvé de lettre de motivation à modifier. Veuillez d'abord générer une lettre.");
+            return;
+          }
+          
+          // Appel à l'API pour modifier la lettre
+          const response = await fetch('http://localhost:3000/api/agents/modify-letter', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              letter: lastLetterMessage,
+              query: userMessage,
+              userId: user._id
+            })
+          });
+          
+          if (response.status === 403) {
+            // Crédits insuffisants
+            const errorData = await response.json();
+            setIsMessageLoading(false);
+            
+            if (errorData.insufficientCredits) {
+              addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à modifier des lettres de motivation.");
+              setShowPlans(true); // Afficher automatiquement les plans
+            }
+            return;
+          }
+          
+          if (!response.ok) {
+            throw new Error('Erreur lors de la modification de la lettre de motivation');
+          }
+          
+          const data = await response.json();
+          
+          // Mettre à jour l'utilisateur dans le localStorage
+          if (data.user) {
+            localStorage.setItem('user', JSON.stringify(data.user));
+          }
+          
+          // Afficher la lettre modifiée
+          setIsMessageLoading(false);
+          addMessage('bot', data.modifiedLetter);
         }
       } catch (error) {
         console.error(error);
         setIsMessageLoading(false);
-        addMessage('bot', "Une erreur s'est produite lors de la génération de la lettre de motivation. Veuillez réessayer.");
+        addMessage('bot', "Une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer.");
       }
     }
   };
