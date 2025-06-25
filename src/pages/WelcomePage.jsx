@@ -1,18 +1,38 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const WelcomePage = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   // Vérifier si l'utilisateur est déjà connecté au chargement de la page
   useEffect(() => {
-    const userInfo = localStorage.getItem('user');
-    if (userInfo) {
-      // Rediriger vers la page de chat si l'utilisateur est connecté
-      navigate('/dashboard');
-    }
+    const checkAuth = () => {
+      const user = localStorage.getItem('user');
+      if (user) {
+        // Rediriger vers la page de tableau de bord si l'utilisateur est connecté
+        // Important: Mettre navigate avant setIsAuthenticated
+        navigate('/dashboard');
+        setIsAuthenticated(true);
+      }
+      setIsLoading(false);
+    };
+    
+    checkAuth();
   }, [navigate]);
 
+  // Si la vérification est en cours, ne rien afficher
+  if (isLoading) {
+    return null;
+  }
+
+  // Si l'utilisateur est authentifié, retourner null (la redirection est déjà lancée)
+  if (isAuthenticated) {
+    return null;
+  }
+
+  // Si l'utilisateur n'est pas authentifié, afficher la page d'accueil
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* En-tête */}
