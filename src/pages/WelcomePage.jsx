@@ -299,24 +299,32 @@ const WelcomePage = () => {
           <div className="grid md:grid-cols-2 gap-8">
             <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow">
               <div className="flex items-center mb-4">
-                <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full"></div>
+                <img 
+                  src="/Ewen-Segui.jpg" 
+                  alt="Ewen Segui" 
+                  className="h-12 w-12 rounded-full object-cover"
+                />
                 <div className="ml-4">
-                  <h4 className="font-semibold text-gray-800 dark:text-white">Marie L.</h4>
-                  <p className="text-gray-500 dark:text-gray-400">Designer UX/UI</p>
+                  <h4 className="font-semibold text-gray-800 dark:text-white">Ewen Segui</h4>
+                  <p className="text-gray-500 dark:text-gray-400">En recherche d'alternance</p>
                 </div>
               </div>
-              <p className="text-gray-600 dark:text-gray-300">"Après 3 mois de recherche sans succès, j'ai utilisé CoverMyLetter pour adapter ma lettre de motivation. J'ai décroché 4 entretiens en 2 semaines et une offre d'emploi !"</p>
+              <p className="text-gray-600 dark:text-gray-300">"À mon retour de mon séjour aux États-Unis, je me suis fais virer de mon école. J'ai donc du chercher du travail le plus rapidement possible et CoverMyLetter m'a permis de gagner beaucoup de temps sur la rédaction des lettres de motivation."</p>
             </div>
             
             <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-lg shadow">
               <div className="flex items-center mb-4">
-                <div className="h-12 w-12 bg-gray-200 dark:bg-gray-600 rounded-full"></div>
+                <img 
+                  src="/Ibrahima-Sall.jpg" 
+                  alt="Ibrahima-Sall" 
+                  className="h-12 w-12 rounded-full object-cover"
+                />
                 <div className="ml-4">
-                  <h4 className="font-semibold text-gray-800 dark:text-white">Thomas B.</h4>
-                  <p className="text-gray-500 dark:text-gray-400">Ingénieur logiciel</p>
+                  <h4 className="font-semibold text-gray-800 dark:text-white">Ibrahima Sall</h4>
+                  <p className="text-gray-500 dark:text-gray-400">L1 Histoire-Géopolitique</p>
                 </div>
               </div>
-              <p className="text-gray-600 dark:text-gray-300">"L'assistant m'a permis d'identifier les compétences clés à mettre en avant. Ma lettre de motivation était parfaitement ciblée et j'ai été convoqué à un entretien dès le lendemain."</p>
+              <p className="text-gray-600 dark:text-gray-300">"En tant qu'étudiant en Histoire-Géopolitique, je n'avais aucune expérience pour rédiger une lettre de motivation efficace pour mon stage. CoverMyLetter m'a permis de créer un document professionnel qui a convaincu 3 organismes différents de me contacter pour un entretien !"</p>
             </div>
           </div>
         </div>
