@@ -17,9 +17,12 @@ const LetterPage = () => {
   const [cvFile, setCvFile] = useState(null);
   const [isCvUploaded, setIsCvUploaded] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [showPlans, setShowPlans] = useState(false); // État pour afficher la carte des forfaits
+  const [isPurchasing, setIsPurchasing] = useState(false); // État pour le chargement de l'achat
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const dropdownRef = useRef(null);
+  const plansCardRef = useRef(null); // Ref pour la carte des forfaits
   const navigate = useNavigate();
   
   // Vérifier si l'utilisateur est authentifié au chargement
@@ -40,11 +43,14 @@ const LetterPage = () => {
   // Récupérer les informations utilisateur depuis le localStorage
   const userInfo = JSON.parse(localStorage.getItem('user') || '{}');
   
-  // Fermer le dropdown quand on clique ailleurs
+  // Fermer le dropdown et la carte quand on clique ailleurs
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (plansCardRef.current && !plansCardRef.current.contains(event.target) && showPlans) {
+        setShowPlans(false);
       }
     };
     
@@ -52,7 +58,56 @@ const LetterPage = () => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
+  }, [showPlans]);
+
+  // Fonction pour acheter des crédits
+  const handlePurchaseCredits = async (amount, price) => {
+    setIsPurchasing(true);
+    
+    try {
+      // Simuler une requête d'achat
+      // En production, vous devriez intégrer un système de paiement comme Stripe
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simuler délai
+      
+      // Récupérer l'utilisateur connecté
+      const user = JSON.parse(localStorage.getItem('user'));
+      
+      // Mettre à jour le nombre de crédits
+      const updatedUser = {
+        ...user,
+        paidRequestsCount: (user.paidRequestsCount || 0) + amount
+      };
+      
+      // Mettre à jour l'utilisateur dans la base de données
+      const response = await fetch(`http://localhost:3000/api/users/${user.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paidRequestsCount: updatedUser.paidRequestsCount
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Erreur lors de la mise à jour des crédits');
+      }
+      
+      // Mettre à jour l'utilisateur dans le localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      // Afficher un message de succès
+      addMessage('bot', `Félicitations ! Vous avez acheté ${amount} crédits pour ${price}€. Vos crédits ont été ajoutés à votre compte.`);
+      
+      // Fermer la carte des forfaits
+      setShowPlans(false);
+    } catch (error) {
+      console.error('Erreur d\'achat:', error);
+      addMessage('bot', "Une erreur s'est produite lors de l'achat des crédits. Veuillez réessayer.");
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -68,6 +123,11 @@ const LetterPage = () => {
       setCvFile(file);
       setIsCvUploaded(true);
       addMessage('user', `J'ai téléversé mon CV: ${file.name}`);
+      
+      // Si une URL d'offre d'emploi est déjà présente, suggérer à l'utilisateur de générer la lettre
+      if (jobUrl.trim() !== '') {
+        addMessage('bot', "Parfait ! Vous avez téléversé votre CV et indiqué l'URL de l'offre d'emploi. Cliquez sur 'Envoyer' pour générer votre lettre de motivation.");
+      }
     } else {
       addMessage('bot', "Veuillez téléverser un fichier PDF valide.");
     }
@@ -103,48 +163,85 @@ const LetterPage = () => {
       setJobUrl('');
       setInputMessage('');
 
-      // Simuler le chargement et la réponse du backend
+      // Indiquer que le message est en cours de chargement
       setIsMessageLoading(true);
       
-      // Simulation d'une réponse après un délai
-      setTimeout(() => {
-        setIsMessageLoading(false);
-        
-        if (isCvUploaded) {
-          addMessage('bot', genererLettre());
+      try {
+        // Vérifier si nous avons un CV et une URL d'offre d'emploi
+        if (isCvUploaded && (jobUrl.trim() !== '' || userMessage.includes('http'))) {
+          // Préparer les données pour l'appel API
+          const formData = new FormData();
+          formData.append('cv', cvFile);
+          
+          // Extraire l'URL de l'offre d'emploi du message ou utiliser jobUrl
+          const extractedUrl = jobUrl.trim() || userMessage.match(/https?:\/\/[^\s]+/)?.[0] || '';
+          formData.append('jobUrl', extractedUrl);
+          
+          // Récupérer l'utilisateur connecté
+          const user = JSON.parse(localStorage.getItem('user'));
+          
+          // Vérifier si l'utilisateur a encore des crédits
+          if (user.freeRequestsCount <= 0 && user.paidRequestsCount <= 0) {
+            setIsMessageLoading(false);
+            addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à générer des lettres de motivation.");
+            setShowPlans(true); // Afficher automatiquement les plans
+            return;
+          }
+          
+          // Appel à l'API backend
+          const response = await fetch('http://localhost:3000/api/agents/generate', {
+            method: 'POST',
+            body: formData
+          });
+          
+          if (!response.ok) {
+            throw new Error('Erreur lors de la génération de la lettre de motivation');
+          }
+          
+          const data = await response.json();
+          
+          // Décrémenter le compteur de crédits
+          let updatedUser = {...user};
+          if (user.freeRequestsCount > 0) {
+            updatedUser.freeRequestsCount -= 1;
+          } else if (user.paidRequestsCount > 0) {
+            updatedUser.paidRequestsCount -= 1;
+          }
+          
+          // Mettre à jour l'utilisateur dans le localStorage
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          
+          // Mettre à jour l'utilisateur dans la base de données
+          await fetch(`http://localhost:3000/api/users/${user.id}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              freeRequestsCount: updatedUser.freeRequestsCount,
+              paidRequestsCount: updatedUser.paidRequestsCount
+            })
+          });
+          
+          // Afficher la lettre générée
+          setIsMessageLoading(false);
+          addMessage('bot', data.coverLetter);
         } else {
+          // Afficher un message d'erreur si manque d'infos
+          setIsMessageLoading(false);
           addMessage('bot', "J'ai besoin de votre CV et de l'URL de l'offre d'emploi pour générer une lettre de motivation personnalisée.");
         }
-      }, 3000);
+      } catch (error) {
+        console.error(error);
+        setIsMessageLoading(false);
+        addMessage('bot', "Une erreur s'est produite lors de la génération de la lettre de motivation. Veuillez réessayer.");
+      }
     }
   };
   
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/');
-  };
-
-  const genererLettre = () => {
-    return `
-**Lettre de Motivation Générée**
-
-Madame, Monsieur,
-
-C'est avec un vif intérêt que je me permets de vous adresser ma candidature pour le poste mentionné dans votre annonce. Après analyse approfondie du profil recherché, je suis convaincu que mon parcours et mes compétences correspondent parfaitement aux exigences du poste.
-
-Au cours de mes expériences professionnelles précédentes, j'ai développé une solide expertise en développement React et front-end moderne. J'ai notamment :
-- Contribué au développement d'interfaces utilisateur dynamiques et réactives
-- Travaillé en équipe sur des projets d'envergure avec des délais serrés
-- Optimisé les performances et l'expérience utilisateur d'applications web complexes
-
-Particulièrement intéressé par votre entreprise et ses projets innovants, je souhaite mettre à profit mes connaissances techniques et ma passion pour le développement web au service de votre équipe.
-
-Je me tiens à votre disposition pour un entretien où nous pourrons échanger plus en détail sur ma candidature et ma motivation.
-
-Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.
-
-[Votre Nom]
-`;
   };
 
   // Si la vérification est en cours, on affiche rien
@@ -250,7 +347,7 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
           {/* Navigation à gauche */}
           <div className="flex items-center space-x-4">
             <Link 
-              to="/" 
+              to="/dashboard" 
               className="flex items-center text-sm text-gray-600 hover:text-indigo-600 dark:text-gray-300 dark:hover:text-indigo-400"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
@@ -296,10 +393,25 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
                     <span>Crédits gratuits</span>
                     <span className="font-medium">{userInfo.freeRequestsCount || 0}</span>
                   </div>
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center mb-3">
                     <span>Crédits payants</span>
                     <span className="font-medium">{userInfo.paidRequestsCount || 0}</span>
                   </div>
+                  
+                  {/* Bouton d'achat de crédits */}
+                  <button
+                    onClick={() => {
+                      setShowPlans(true);
+                      setDropdownOpen(false);
+                    }}
+                    className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-medium rounded flex items-center justify-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                      <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
+                    </svg>
+                    Acheter des crédits
+                  </button>
                 </div>
                 
                 <button
@@ -446,6 +558,145 @@ Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distin
           </form>
         </div>
       </div>
+
+      {/* Modal pour l'achat de crédits */}
+      {showPlans && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+          <div 
+            ref={plansCardRef}
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 transform transition-all"
+          >
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Choisir un forfait</h3>
+              <button 
+                onClick={() => setShowPlans(false)}
+                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Forfait Starter */}
+              <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Starter</h4>
+                  <div className="mt-2 flex justify-center">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">0,99€</span>
+                  </div>
+                </div>
+                
+                <div className="p-4 flex-1 flex flex-col">
+                  <ul className="space-y-2 flex-1">
+                    <li className="flex items-center">
+                      <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">10 lettres de motivation</span>
+                    </li>
+                  </ul>
+                  
+                  <div className="mt-auto pt-4">
+                    <button
+                      onClick={() => handlePurchaseCredits(10, 0.99)}
+                      disabled={isPurchasing}
+                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Forfait Standard */}
+              <div className="bg-white dark:bg-gray-700 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 overflow-hidden shadow-md hover:shadow-lg transition-shadow relative flex flex-col">
+                <div className="absolute top-0 right-0">
+                  <div className="bg-indigo-500 text-white text-xs px-2 py-1 rounded-bl-lg">
+                    RECOMMANDÉ
+                  </div>
+                </div>
+                
+                <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Standard</h4>
+                  <div className="mt-2 flex justify-center">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">1,99€</span>
+                  </div>
+                </div>
+                
+                <div className="p-4 flex-1 flex flex-col">
+                  <ul className="space-y-2 flex-1">
+                    <li className="flex items-center">
+                      <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">30 lettres de motivation</span>
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Meilleur rapport qualité/prix</span>
+                    </li>
+                  </ul>
+                  
+                  <div className="mt-auto pt-4">
+                    <button
+                      onClick={() => handlePurchaseCredits(30, 1.99)}
+                      disabled={isPurchasing}
+                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Forfait Premium */}
+              <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-600">
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Premium</h4>
+                  <div className="mt-2 flex justify-center">
+                    <span className="text-3xl font-bold text-gray-900 dark:text-white">4,99€</span>
+                  </div>
+                </div>
+                
+                <div className="p-4 flex-1 flex flex-col">
+                  <ul className="space-y-2 flex-1">
+                    <li className="flex items-center">
+                      <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">100 lettres de motivation</span>
+                    </li>
+                    <li className="flex items-center">
+                      <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                      </svg>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">Idéal pour recherche intensive</span>
+                    </li>
+                  </ul>
+                  
+                  <div className="mt-auto pt-4">
+                    <button
+                      onClick={() => handlePurchaseCredits(100, 4.99)}
+                      disabled={isPurchasing}
+                      className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <p className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400">
+              Tous les prix incluent la TVA. Paiement 100% sécurisé.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

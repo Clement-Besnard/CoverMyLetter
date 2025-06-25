@@ -39,31 +39,29 @@ const LoginPage = () => {
     setIsLoading(true);
 
     try {
-      // Dans une implémentation réelle, vous auriez un endpoint d'authentification
-      // Pour cet exemple, nous allons faire une requête GET pour récupérer tous les utilisateurs
-      // et vérifier manuellement les identifiants
-      const response = await fetch('http://localhost:3000/api/users');
-      const users = await response.json();
+      // Utiliser la nouvelle route d'authentification
+      const response = await fetch('http://localhost:3000/api/users/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la connexion au serveur');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Erreur lors de la connexion');
       }
 
-      // Rechercher l'utilisateur avec l'email fourni
-      const user = users.find(u => u.email === formData.email);
-      
-      // Vérifier si l'utilisateur existe et si le mot de passe correspond
-      if (!user || user.password !== formData.password) {
-        throw new Error('Email ou mot de passe incorrect');
-      }
-
-      // Supprimer le mot de passe avant de stocker les informations de l'utilisateur
-      const { password, ...userWithoutPassword } = user;
+      const userData = await response.json();
       
       // Stocker les informations de l'utilisateur dans localStorage
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      localStorage.setItem('user', JSON.stringify(userData));
 
-      // Redirection vers la page de chat après une connexion réussie
+      // Redirection vers la page de tableau de bord après une connexion réussie
       navigate('/dashboard');
     } catch (err) {
       setError(err.message);
