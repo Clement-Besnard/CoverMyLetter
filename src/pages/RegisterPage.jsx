@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const SignupPage = () => {
@@ -11,7 +11,23 @@ const SignupPage = () => {
   });
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthChecking, setIsAuthChecking] = useState(true);
   const navigate = useNavigate();
+
+  // Vérifier si l'utilisateur est déjà connecté
+  useEffect(() => {
+    const checkAuth = () => {
+      const user = localStorage.getItem('user');
+      if (user) {
+        setIsAuthenticated(true);
+        navigate('/dashboard');
+      }
+      setIsAuthChecking(false);
+    };
+    
+    checkAuth();
+  }, [navigate]);
 
   const handleChange = (e) => {
     setFormData({
@@ -63,6 +79,16 @@ const SignupPage = () => {
       setIsLoading(false);
     }
   };
+
+  // Si la vérification d'authentification est en cours, ne rien afficher
+  if (isAuthChecking) {
+    return null;
+  }
+
+  // Si l'utilisateur est authentifié, ne rien afficher (la redirection est déjà lancée)
+  if (isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 flex flex-col">
