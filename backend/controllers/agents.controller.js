@@ -4,6 +4,7 @@ const FormData = require('form-data');
 const axios = require('axios');
 const { Readable } = require('stream');
 const multer = require('multer');
+require('dotenv').config();
 
 // Configuration du stockage des fichiers
 const storage = multer.memoryStorage();
@@ -20,8 +21,8 @@ const upload = multer({
 });
 
 // Clé API Langflow
-const API_KEY = 'sk-uvq-XukOwdXL62gNFpUS5MITWrNuhzpbDACqEs__s7c';
-const LANGFLOW_BASE_URL = 'http://localhost:7860';
+const API_KEY = process.env.API_KEY;
+const LANGFLOW_BASE_URL = process.env.LANGFLOW_BASE_URL;
 
 // Middleware pour gérer l'upload de fichier
 exports.uploadMiddleware = upload.single('cv');
@@ -88,7 +89,7 @@ exports.generateCoverLetter = async (req, res) => {
       output_type: "chat",
       input_type: "chat",
       tweaks: {
-        'File-KmrxQ': {
+        [process.env.FILE_TWEAK_ID]: {
           path: uploadedPath
         }
       }
