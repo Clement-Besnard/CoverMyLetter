@@ -1,0 +1,11 @@
+node_modules
+backend
+langflow
+dist
+npm-debug.log
+.git
+.env
+.env.local
+Dockerfile
+.dockerignore
+docker-compose.yml
