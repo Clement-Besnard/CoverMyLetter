@@ -4,7 +4,7 @@ const FormData = require('form-data');
 const axios = require('axios');
 const { Readable } = require('stream');
 const multer = require('multer');
-require('dotenv').config();
+require('../config/env');
 
 // Configuration du stockage des fichiers
 const storage = multer.memoryStorage();
@@ -23,6 +23,17 @@ const upload = multer({
 // Clé API Langflow
 const API_KEY = process.env.API_KEY;
 const LANGFLOW_BASE_URL = process.env.LANGFLOW_BASE_URL;
+
+// Chaque flow existe en deux versions, suffixées par la langue.
+// La liste blanche est indispensable : cette valeur vient du client et est
+// concaténée dans l'URL appelée.
+const SUPPORTED_LANGUAGES = ['fr', 'en'];
+const DEFAULT_LANGUAGE = 'fr';
+
+const flowEndpoint = (base, language) => {
+  const lang = SUPPORTED_LANGUAGES.includes(language) ? language : DEFAULT_LANGUAGE;
+  return `${base}-${lang}`;
+};
 
 // Middleware pour gérer l'upload de fichier
 exports.uploadMiddleware = upload.single('cv');
@@ -95,7 +106,7 @@ exports.generateCoverLetter = async (req, res) => {
       }
     };
 
-    const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/covermyletter`, payload, {
+    const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/${flowEndpoint('covermyletter', req.body.language)}`, payload, {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY
@@ -133,7 +144,12 @@ exports.generateCoverLetter = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erreur lors de la génération de la lettre:', error);
+    console.error('Erreur lors de la génération de la lettre:', error.message);
+    if (error.response) {
+      console.error('  -> URL    :', error.config?.url);
+      console.error('  -> Statut :', error.response.status);
+      console.error('  -> Réponse:', JSON.stringify(error.response.data, null, 2));
+    }
     res.status(500).json({ 
       message: 'Erreur lors de la génération de la lettre de motivation',
       error: error.message 
@@ -175,7 +191,7 @@ exports.modifyLetter = async (req, res) => {
       input_type: "chat"
     };
 
-    const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/modifymyletter`, payload, {
+    const runResponse = await axios.post(`${LANGFLOW_BASE_URL}/api/v1/run/${flowEndpoint('modifymyletter', req.body.language)}`, payload, {
       headers: {
         'Content-Type': 'application/json',
         'x-api-key': API_KEY
@@ -213,7 +229,12 @@ exports.modifyLetter = async (req, res) => {
     });
     
   } catch (error) {
-    console.error('Erreur lors de la modification de la lettre:', error);
+    console.error('Erreur lors de la modification de la lettre:', error.message);
+    if (error.response) {
+      console.error('  -> URL    :', error.config?.url);
+      console.error('  -> Statut :', error.response.status);
+      console.error('  -> Réponse:', JSON.stringify(error.response.data, null, 2));
+    }
     res.status(500).json({ 
       message: 'Erreur lors de la modification de la lettre de motivation',
       error: error.message 

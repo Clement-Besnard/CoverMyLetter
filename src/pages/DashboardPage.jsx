@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageToggle from '../components/LanguageToggle';
 
 const DashboardPage = () => {
+  const { t } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -58,7 +61,7 @@ const DashboardPage = () => {
       if (!user || !user._id) {
         console.error("ID utilisateur introuvable");
         setIsPurchasing(false);
-        alert("Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
+        alert(t('dashboard.sessionError'));
         navigate('/login');
         return;
       }
@@ -73,7 +76,7 @@ const DashboardPage = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'achat de crédits');
+        throw new Error(t('plans.purchaseError'));
       }
       
       const data = await response.json();
@@ -90,7 +93,7 @@ const DashboardPage = () => {
       window.location.reload();
     } catch (error) {
       console.error('Erreur d\'achat:', error);
-      alert("Une erreur s'est produite lors de l'achat des crédits. Veuillez réessayer.");
+      alert(t('dashboard.purchaseError'));
     } finally {
       setIsPurchasing(false);
     }
@@ -123,6 +126,8 @@ const DashboardPage = () => {
           <h2 className="ml-3 text-xl font-semibold text-gray-800 dark:text-white">CoverMyLetter</h2>
         </div>
         
+        <div className="flex items-center gap-4">
+        <LanguageToggle />
         {/* Menu utilisateur à droite */}
         <div className="relative" ref={dropdownRef}>
           <button 
@@ -132,7 +137,7 @@ const DashboardPage = () => {
             <div className="h-8 w-8 bg-indigo-100 dark:bg-indigo-800 rounded-full flex items-center justify-center mr-2">
               <span className="text-indigo-600 dark:text-indigo-300">{userInfo.firstName?.[0] || 'U'}</span>
             </div>
-            <span>{userInfo.firstName || 'Utilisateur'}</span>
+            <span>{userInfo.firstName || t('common.user')}</span>
             <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
@@ -152,11 +157,11 @@ const DashboardPage = () => {
               
               <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex justify-between items-center mb-2">
-                  <span>Crédits gratuits</span>
+                  <span>{t('common.freeCredits')}</span>
                   <span className="font-medium">{userInfo.freeRequestsCount || 0}</span>
                 </div>
                 <div className="flex justify-between items-center mb-3">
-                  <span>Crédits payants</span>
+                  <span>{t('common.paidCredits')}</span>
                   <span className="font-medium">{userInfo.paidRequestsCount || 0}</span>
                 </div>
                 
@@ -172,7 +177,7 @@ const DashboardPage = () => {
                     <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
                     <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
                   </svg>
-                  Acheter des crédits
+                  {t('common.buyCredits')}
                 </button>
               </div>
               
@@ -184,11 +189,12 @@ const DashboardPage = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  Se déconnecter
+                  {t('common.logout')}
                 </div>
               </button>
             </div>
           )}
+        </div>
         </div>
       </header>
 
@@ -198,10 +204,10 @@ const DashboardPage = () => {
           {/* Carte de bienvenue */}
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              Bonjour, {userInfo.firstName || 'Utilisateur'} 👋
+              {t('dashboard.hello', { name: userInfo.firstName || t('common.user') })}
             </h1>
             <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
-              Que souhaitez-vous faire aujourd'hui ?
+              {t('dashboard.question')}
             </p>
             <div className="flex flex-wrap gap-4">
               <Link 
@@ -211,7 +217,7 @@ const DashboardPage = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                Créer une lettre de motivation
+                {t('dashboard.createLetter')}
               </Link>
               <button 
                 className="inline-flex items-center px-6 py-3 border border-indigo-600 text-indigo-600 hover:bg-indigo-50 dark:border-indigo-500 dark:text-indigo-400 dark:hover:bg-gray-700 font-medium rounded-lg transition-colors"
@@ -220,7 +226,7 @@ const DashboardPage = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                Mes lettres enregistrées
+                {t('dashboard.savedLetters')}
               </button>
             </div>
           </div>
@@ -236,7 +242,7 @@ const DashboardPage = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Lettres créées</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('dashboard.lettersCreated')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">0</p>
                 </div>
               </div>
@@ -250,7 +256,7 @@ const DashboardPage = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Crédits gratuits</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('common.freeCredits')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{userInfo.freeRequestsCount || 0}</p>
                 </div>
               </div>
@@ -264,7 +270,7 @@ const DashboardPage = () => {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Crédits payants</p>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">{t('common.paidCredits')}</p>
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">{userInfo.paidRequestsCount || 0}</p>
                 </div>
               </div>
@@ -276,7 +282,7 @@ const DashboardPage = () => {
       {/* Pied de page */}
       <footer className="py-4 px-8 bg-gray-50 dark:bg-gray-800 flex">
         <div className="max-w-7xl mx-auto flex justify-center md:justify-between items-center text-sm text-gray-500 dark:text-gray-400">
-          <p>© 2025 CoverMyLetter. Tous droits réservés.</p>
+          <p>{t('common.rights')}</p>
         </div>
       </footer>
 
@@ -288,7 +294,7 @@ const DashboardPage = () => {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 transform transition-all"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Choisir un forfait</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('plans.title')}</h3>
               <button 
                 onClick={() => setShowPlans(false)}
                 className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
@@ -303,7 +309,7 @@ const DashboardPage = () => {
               {/* Forfait Starter */}
               <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Starter</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.starter')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">0,99€</span>
                   </div>
@@ -315,7 +321,7 @@ const DashboardPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">10 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters10')}</span>
                     </li>
                   </ul>
                   
@@ -325,7 +331,7 @@ const DashboardPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -335,12 +341,12 @@ const DashboardPage = () => {
               <div className="bg-white dark:bg-gray-700 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 overflow-hidden shadow-md hover:shadow-lg transition-shadow relative flex flex-col">
                 <div className="absolute top-0 right-0">
                   <div className="bg-indigo-500 text-white text-xs px-2 py-1 rounded-bl-lg">
-                    RECOMMANDÉ
+                    {t('plans.recommended')}
                   </div>
                 </div>
                 
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Standard</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.standard')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">1,99€</span>
                   </div>
@@ -352,13 +358,13 @@ const DashboardPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">30 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters30')}</span>
                     </li>
                     <li className="flex items-center">
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Meilleur rapport qualité/prix</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.bestValue')}</span>
                     </li>
                   </ul>
                   
@@ -368,7 +374,7 @@ const DashboardPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -377,7 +383,7 @@ const DashboardPage = () => {
               {/* Forfait Premium */}
               <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Premium</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.premium')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">4,99€</span>
                   </div>
@@ -389,13 +395,13 @@ const DashboardPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">100 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters100')}</span>
                     </li>
                     <li className="flex items-center">
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Idéal pour recherche intensive</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.intensive')}</span>
                     </li>
                   </ul>
                   
@@ -405,7 +411,7 @@ const DashboardPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -413,7 +419,7 @@ const DashboardPage = () => {
             </div>
             
             <p className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400">
-              Tous les prix incluent la TVA. Paiement 100% sécurisé.
+              {t('plans.vat')}
             </p>
           </div>
         </div>

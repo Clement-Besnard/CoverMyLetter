@@ -1,16 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageToggle from '../components/LanguageToggle';
 import { jsPDF } from 'jspdf';
 import 'jspdf-autotable'; // Pour une meilleure mise en page
 
 const LetterPage = () => {
+  const { t, language } = useLanguage();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState([
     { 
       id: 1, 
       type: 'bot', 
-      content: "Bienvenue sur l'assistant de lettre de motivation ! Veuillez télécharger votre CV en PDF et fournir l'URL de l'offre d'emploi pour que je puisse vous aider à créer une lettre personnalisée."
+      content: t('letter.greetingFull')
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
@@ -80,7 +83,7 @@ const LetterPage = () => {
       });
       
       if (!response.ok) {
-        throw new Error('Erreur lors de l\'achat de crédits');
+        throw new Error(t('plans.purchaseError'));
       }
       
       const data = await response.json();
@@ -91,13 +94,13 @@ const LetterPage = () => {
       }
       
       // Afficher un message de succès
-      addMessage('bot', `Félicitations ! Vous avez acheté ${amount} crédits pour ${price}€. Vos crédits ont été ajoutés à votre compte.`);
+      addMessage('bot', t('plans.purchaseSuccess', { amount, price }));
       
       // Fermer la carte des forfaits
       setShowPlans(false);
     } catch (error) {
       console.error('Erreur d\'achat:', error);
-      addMessage('bot', "Une erreur s'est produite lors de l'achat des crédits. Veuillez réessayer.");
+      addMessage('bot', t('dashboard.purchaseError'));
     } finally {
       setIsPurchasing(false);
     }
@@ -116,14 +119,14 @@ const LetterPage = () => {
     if (file && file.type === 'application/pdf') {
       setCvFile(file);
       setIsCvUploaded(true);
-      addMessage('user', `J'ai téléversé mon CV: ${file.name}`);
+      addMessage('user', t('letter.cvUploadedMessage', { name: file.name }));
       
       // Si une URL d'offre d'emploi est déjà présente, suggérer à l'utilisateur de générer la lettre
       if (jobUrl.trim() !== '') {
-        addMessage('bot', "Parfait ! Vous avez téléversé votre CV et indiqué l'URL de l'offre d'emploi. Cliquez sur 'Envoyer' pour générer votre lettre de motivation.");
+        addMessage('bot', t('letter.readyClickSend'));
       }
     } else {
-      addMessage('bot', "Veuillez téléverser un fichier PDF valide.");
+      addMessage('bot', t('letter.invalidPdf'));
     }
   };
 
@@ -147,7 +150,7 @@ const LetterPage = () => {
     if (inputMessage.trim() !== '' || jobUrl.trim() !== '') {
       // Ajouter le message utilisateur
       const userMessage = jobUrl.trim() !== '' 
-        ? `Voici l'offre d'emploi: ${jobUrl}`
+        ? t('letter.jobPostingIs', { url: jobUrl })
         : inputMessage;
       
       // Ajouter le message de l'utilisateur
@@ -167,7 +170,7 @@ const LetterPage = () => {
         // Vérification de sécurité pour l'ID
         if (!user || !user._id) {
           setIsMessageLoading(false);
-          addMessage('bot', "Une erreur s'est produite avec votre session utilisateur. Veuillez vous reconnecter.");
+          addMessage('bot', t('dashboard.sessionError'));
           setTimeout(() => navigate('/login'), 3000);
           return;
         }
@@ -183,6 +186,8 @@ const LetterPage = () => {
           const extractedUrl = jobUrl.trim() || userMessage.match(/https?:\/\/[^\s]+/)?.[0] || '';
           formData.append('jobUrl', extractedUrl);
           formData.append('userId', user._id);
+          // Sélectionne le flow Langflow covermyletter-fr ou covermyletter-en
+          formData.append('language', language);
           
           // Appel à l'API backend - la vérification des crédits se fait côté serveur
           const response = await fetch('http://localhost:3000/api/agents/generate', {
@@ -197,14 +202,14 @@ const LetterPage = () => {
             setIsMessageLoading(false);
             
             if (errorData.insufficientCredits) {
-              addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à générer des lettres de motivation.");
+              addMessage('bot', t('letter.outOfCreditsGenerate'));
               setShowPlans(true); // Afficher automatiquement les plans
             }
             return;
           }
           
           if (!response.ok) {
-            throw new Error('Erreur lors de la génération de la lettre de motivation');
+            throw new Error(t('letter.generateError'));
           }
           
           const data = await response.json();
@@ -221,7 +226,7 @@ const LetterPage = () => {
         } else if (!isCvUploaded) {
           // Afficher un message d'erreur si manque d'infos
           setIsMessageLoading(false);
-          addMessage('bot', "J'ai besoin de votre CV et de l'URL de l'offre d'emploi pour générer une lettre de motivation personnalisée.");
+          addMessage('bot', t('letter.missingInfo'));
         } else {
           // NOUVEAU CODE: Traitement des modifications de lettre existante
           // Recherche de la dernière lettre générée dans les messages
@@ -235,7 +240,7 @@ const LetterPage = () => {
           
           if (!lastLetterMessage) {
             setIsMessageLoading(false);
-            addMessage('bot', "Je n'ai pas trouvé de lettre de motivation à modifier. Veuillez d'abord générer une lettre.");
+            addMessage('bot', t('letter.noLetterToModify'));
             return;
           }
           
@@ -247,6 +252,7 @@ const LetterPage = () => {
             },
             body: JSON.stringify({
               letter: lastLetterMessage,
+              language,
               query: `${lastLetterMessage}\n\n${userMessage}`,
               userId: user._id
             })
@@ -258,14 +264,14 @@ const LetterPage = () => {
             setIsMessageLoading(false);
             
             if (errorData.insufficientCredits) {
-              addMessage('bot', "Vous avez épuisé tous vos crédits. Veuillez acheter un forfait pour continuer à modifier des lettres de motivation.");
+              addMessage('bot', t('letter.outOfCreditsModify'));
               setShowPlans(true); // Afficher automatiquement les plans
             }
             return;
           }
           
           if (!response.ok) {
-            throw new Error('Erreur lors de la modification de la lettre de motivation');
+            throw new Error(t('letter.modifyError'));
           }
           
           const data = await response.json();
@@ -282,7 +288,7 @@ const LetterPage = () => {
       } catch (error) {
         console.error(error);
         setIsMessageLoading(false);
-        addMessage('bot', "Une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer.");
+        addMessage('bot', t('letter.requestError'));
       }
     }
   };
@@ -361,10 +367,10 @@ const LetterPage = () => {
         {/* Contenu du panneau latéral - centré verticalement */}
         <div className="flex-1 overflow-y-auto p-4 flex flex-col justify-center">
           <div>
-            <h3 className="text-base font-semibold mb-3 mt-2 text-gray-800 dark:text-white text-center">Assistant de Lettre de Motivation</h3>
+            <h3 className="text-base font-semibold mb-3 mt-2 text-gray-800 dark:text-white text-center">{t('letter.title')}</h3>
             
             <div className="mb-4 pt-4">
-              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">Téléverser votre CV</h4>
+              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">{t('letter.uploadCv')}</h4>
               <div 
                 className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-3 text-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-all"
                 onClick={triggerFileInput}
@@ -383,45 +389,45 @@ const LetterPage = () => {
                 </div>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
                   {isCvUploaded 
-                    ? <span className="text-green-500">CV téléversé: {cvFile?.name}</span>
-                    : "Cliquez ou déposez votre fichier CV (PDF uniquement)"}
+                    ? <span className="text-green-500">{t('letter.cvUploaded', { name: cvFile?.name })}</span>
+                    : t('letter.dropzone')}
                 </p>
               </div>
             </div>
             
             <div className="mb-4 pt-4">
-              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">Lien de l'offre d'emploi</h4>
+              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">{t('letter.jobLink')}</h4>
               <form onSubmit={handleFormSubmit} className="flex">
                 <input
                   type="url"
                   value={jobUrl}
                   onChange={(e) => setJobUrl(e.target.value)}
-                  placeholder="Coller l'URL de l'offre"
+                  placeholder={t('letter.jobLinkPlaceholder')}
                   className="flex-1 px-3 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded-l-lg focus:outline-none focus:ring-1 focus:ring-indigo-500 dark:bg-gray-700 dark:text-white"
                 />
                 <button
                   type="submit"
                   className="px-3 py-1 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-r-lg"
                 >
-                  Envoyer
+                  {t('common.send')}
                 </button>
               </form>
             </div>
             
             <div className="mb-3 pt-4">
-              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">Conseils</h4>
+              <h4 className="text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">{t('letter.tipsTitle')}</h4>
               <ul className="space-y-1 text-xs text-gray-600 dark:text-gray-400">
                 <li className="flex items-start">
                   <span className="text-indigo-500 mr-1">•</span>
-                  Téléversez un CV à jour et complet
+                  {t('letter.tip1')}
                 </li>
                 <li className="flex items-start">
                   <span className="text-indigo-500 mr-1">•</span>
-                  Fournissez le lien exact de l'offre d'emploi
+                  {t('letter.tip2')}
                 </li>
                 <li className="flex items-start">
                   <span className="text-indigo-500 mr-1">•</span>
-                  Précisez vos attentes dans le chat
+                  {t('letter.tip3')}
                 </li>
               </ul>
             </div>
@@ -443,12 +449,15 @@ const LetterPage = () => {
                 <path d="M19 12H5"></path>
                 <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
-              Retour
+              {t('common.back')}
             </Link>
           </div>
           
           {/* Espace central flexible */}
           <div className="flex-1"></div>
+
+          <LanguageToggle className="mr-4" />
+
           
           {/* Menu utilisateur à droite */}
           <div className="relative" ref={dropdownRef}>
@@ -459,7 +468,7 @@ const LetterPage = () => {
               <div className="h-8 w-8 bg-indigo-100 dark:bg-indigo-800 rounded-full flex items-center justify-center mr-2">
                 <span className="text-indigo-600 dark:text-indigo-300">{userInfo.firstName?.[0] || 'U'}</span>
               </div>
-              <span>{userInfo.firstName || 'Utilisateur'}</span>
+              <span>{userInfo.firstName || t('common.user')}</span>
               <svg xmlns="http://www.w3.org/2000/svg" className={`ml-1 h-4 w-4 transition-transform ${dropdownOpen ? 'transform rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
@@ -479,11 +488,11 @@ const LetterPage = () => {
                 
                 <div className="px-4 py-3 text-sm text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-2">
-                    <span>Crédits gratuits</span>
+                    <span>{t('common.freeCredits')}</span>
                     <span className="font-medium">{userInfo.freeRequestsCount || 0}</span>
                   </div>
                   <div className="flex justify-between items-center mb-3">
-                    <span>Crédits payants</span>
+                    <span>{t('common.paidCredits')}</span>
                     <span className="font-medium">{userInfo.paidRequestsCount || 0}</span>
                   </div>
                   
@@ -499,7 +508,7 @@ const LetterPage = () => {
                       <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
                       <path fillRule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
                     </svg>
-                    Acheter des crédits
+                    {t('common.buyCredits')}
                   </button>
                 </div>
                 
@@ -511,7 +520,7 @@ const LetterPage = () => {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                     </svg>
-                    Se déconnecter
+                    {t('common.logout')}
                   </div>
                 </button>
               </div>
@@ -551,7 +560,7 @@ const LetterPage = () => {
                           <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                           </svg>
-                          Télécharger en PDF
+                          {t('letter.downloadPdf')}
                         </button>
                       </div>
                     )}
@@ -573,7 +582,7 @@ const LetterPage = () => {
                     <div className="h-2 w-2 bg-indigo-400 rounded-full animate-[pulse_1s_ease-in-out_0.4s_infinite]"></div>
                   </div>
                   <span>
-                    Assistant est en train d'écrire...
+                    {t('letter.typing')}
                   </span>
                 </div>
               )}
@@ -592,7 +601,7 @@ const LetterPage = () => {
                   <textarea
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Posez une question sur la lettre de motivation..."
+                    placeholder={t('letter.chatPlaceholder')}
                     className="w-full resize-none outline-none text-gray-700 dark:text-gray-200 text-xs placeholder-gray-400 bg-transparent px-3 pt-2 min-h-[30px] max-h-[100px] overflow-auto border-none"
                     onInput={(e) => {
                       e.target.style.height = 'auto';
@@ -653,10 +662,10 @@ const LetterPage = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-2 w-2 mr-1">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <span className="text-[10px]">Entrée pour envoyer, Maj+Entrée pour nouvelle ligne</span>
+                <span className="text-[10px]">{t('letter.sendHint')}</span>
               </div>
               <div>
-                <span className="text-[10px]">{inputMessage.length} caractères</span>
+                <span className="text-[10px]">{t('letter.charCount', { count: inputMessage.length })}</span>
               </div>
             </div>
           </form>
@@ -671,7 +680,7 @@ const LetterPage = () => {
             className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl p-6 w-full max-w-2xl mx-4 transform transition-all"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Choisir un forfait</h3>
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">{t('plans.title')}</h3>
               <button 
                 onClick={() => setShowPlans(false)}
                 className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300"
@@ -686,7 +695,7 @@ const LetterPage = () => {
               {/* Forfait Starter */}
               <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Starter</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.starter')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">0,99€</span>
                   </div>
@@ -698,7 +707,7 @@ const LetterPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">10 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters10')}</span>
                     </li>
                   </ul>
                   
@@ -708,7 +717,7 @@ const LetterPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -718,12 +727,12 @@ const LetterPage = () => {
               <div className="bg-white dark:bg-gray-700 rounded-lg border-2 border-indigo-500 dark:border-indigo-400 overflow-hidden shadow-md hover:shadow-lg transition-shadow relative flex flex-col">
                 <div className="absolute top-0 right-0">
                   <div className="bg-indigo-500 text-white text-xs px-2 py-1 rounded-bl-lg">
-                    RECOMMANDÉ
+                    {t('plans.recommended')}
                   </div>
                 </div>
                 
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Standard</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.standard')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">1,99€</span>
                   </div>
@@ -735,13 +744,13 @@ const LetterPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">30 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters30')}</span>
                     </li>
                     <li className="flex items-center">
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Meilleur rapport qualité/prix</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.bestValue')}</span>
                     </li>
                   </ul>
                   
@@ -751,7 +760,7 @@ const LetterPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -760,7 +769,7 @@ const LetterPage = () => {
               {/* Forfait Premium */}
               <div className="bg-white dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600 overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col">
                 <div className="p-4 border-b border-gray-200 dark:border-gray-600">
-                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">Premium</h4>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white text-center">{t('plans.premium')}</h4>
                   <div className="mt-2 flex justify-center">
                     <span className="text-3xl font-bold text-gray-900 dark:text-white">4,99€</span>
                   </div>
@@ -772,13 +781,13 @@ const LetterPage = () => {
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">100 lettres de motivation</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.letters100')}</span>
                     </li>
                     <li className="flex items-center">
                       <svg className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
                       </svg>
-                      <span className="text-sm text-gray-700 dark:text-gray-300">Idéal pour recherche intensive</span>
+                      <span className="text-sm text-gray-700 dark:text-gray-300">{t('plans.intensive')}</span>
                     </li>
                   </ul>
                   
@@ -788,7 +797,7 @@ const LetterPage = () => {
                       disabled={isPurchasing}
                       className="w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isPurchasing ? 'Traitement...' : 'Acheter maintenant'}
+                      {isPurchasing ? t('plans.processing') : t('plans.buyNow')}
                     </button>
                   </div>
                 </div>
@@ -796,7 +805,7 @@ const LetterPage = () => {
             </div>
             
             <p className="text-center mt-4 text-xs text-gray-500 dark:text-gray-400">
-              Tous les prix incluent la TVA. Paiement 100% sécurisé.
+              {t('plans.vat')}
             </p>
           </div>
         </div>

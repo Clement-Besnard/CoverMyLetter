@@ -4,7 +4,7 @@ const cors = require('cors');
 const connectDB = require('./config/database');
 const userRoutes = require('./routes/users.routes');
 const agentsRoutes = require('./routes/agents.routes');
-require('dotenv').config();
+require('./config/env');
 
 // Connexion à MongoDB
 connectDB();

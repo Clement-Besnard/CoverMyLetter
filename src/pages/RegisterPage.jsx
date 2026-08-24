@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageToggle from '../components/LanguageToggle';
 
 const SignupPage = () => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -42,7 +45,7 @@ const SignupPage = () => {
 
     // Validation simple côté client
     if (formData.password !== formData.confirmPassword) {
-      setError('Les mots de passe ne correspondent pas.');
+      setError(t('register.passwordMismatch'));
       return;
     }
 
@@ -65,7 +68,7 @@ const SignupPage = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Erreur lors de l\'inscription');
+        throw new Error(data.message || t('register.error'));
       }
 
       // Stocker les informations de l'utilisateur dans localStorage
@@ -100,13 +103,14 @@ const SignupPage = () => {
           </div>
           <h2 className="ml-3 text-xl font-semibold text-gray-800 dark:text-white">CoverMyLetter</h2>
         </Link>
+        <LanguageToggle />
       </header>
 
       {/* Contenu principal */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">Créez votre compte</h2>
+            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">{t('register.title')}</h2>
             
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -117,7 +121,7 @@ const SignupPage = () => {
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Prénom</label>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('register.firstName')}</label>
                   <input
                     type="text"
                     id="firstName"
@@ -129,7 +133,7 @@ const SignupPage = () => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nom</label>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('register.lastName')}</label>
                   <input
                     type="text"
                     id="lastName"
@@ -143,7 +147,7 @@ const SignupPage = () => {
               </div>
               
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Adresse email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.email')}</label>
                 <input
                   type="email"
                   id="email"
@@ -156,7 +160,7 @@ const SignupPage = () => {
               </div>
               
               <div className="mb-4">
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mot de passe</label>
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.password')}</label>
                 <input
                   type="password"
                   id="password"
@@ -169,7 +173,7 @@ const SignupPage = () => {
               </div>
               
               <div className="mb-6">
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirmer le mot de passe</label>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('register.confirmPassword')}</label>
                 <input
                   type="password"
                   id="confirmPassword"
@@ -186,15 +190,15 @@ const SignupPage = () => {
                 disabled={isLoading}
                 className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70"
               >
-                {isLoading ? 'Création en cours...' : 'Créer mon compte'}
+                {isLoading ? t('register.submitting') : t('register.submit')}
               </button>
             </form>
             
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Vous avez déjà un compte ?{' '}
+                {t('register.haveAccount')}{' '}
                 <Link to="/login" className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                  Connexion
+                  {t('common.login')}
                 </Link>
               </p>
             </div>
@@ -206,7 +210,7 @@ const SignupPage = () => {
       <footer className="py-4 px-8">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-gray-600 dark:text-gray-400 text-xs">
-            © 2023 CoverMyLetter. Tous droits réservés.
+            {t('common.rights')}
           </p>
         </div>
       </footer>

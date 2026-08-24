@@ -24,3 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+# CV personnel de test, jamais lu par l'app
+backend/cv.pdf

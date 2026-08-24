@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useLanguage } from '../i18n/LanguageContext';
+import LanguageToggle from '../components/LanguageToggle';
 
 const LoginPage = () => {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -53,7 +56,7 @@ const LoginPage = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Erreur lors de la connexion');
+        throw new Error(errorData.message || t('login.error'));
       }
 
       const userData = await response.json();
@@ -90,13 +93,14 @@ const LoginPage = () => {
           </div>
           <h2 className="ml-3 text-xl font-semibold text-gray-800 dark:text-white">CoverMyLetter</h2>
         </Link>
+        <LanguageToggle />
       </header>
 
       {/* Contenu principal */}
       <main className="flex-1 flex items-center justify-center px-6">
         <div className="w-full max-w-md">
           <div className="bg-white dark:bg-gray-800 shadow-xl rounded-lg p-8">
-            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">Connexion à votre compte</h2>
+            <h2 className="text-2xl font-bold text-center text-gray-900 dark:text-white mb-6">{t('login.title')}</h2>
             
             {error && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" role="alert">
@@ -106,7 +110,7 @@ const LoginPage = () => {
             
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Adresse email</label>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.email')}</label>
                 <input
                   type="email"
                   id="email"
@@ -120,9 +124,9 @@ const LoginPage = () => {
               
               <div className="mb-6">
                 <div className="flex justify-between items-center">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mot de passe</label>
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t('login.password')}</label>
                   <a href="#" className="text-xs text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                    Mot de passe oublié ?
+                    {t('login.forgot')}
                   </a>
                 </div>
                 <input
@@ -141,15 +145,15 @@ const LoginPage = () => {
                 disabled={isLoading}
                 className="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-70"
               >
-                {isLoading ? 'Connexion en cours...' : 'Se connecter'}
+                {isLoading ? t('login.submitting') : t('login.submit')}
               </button>
             </form>
             
             <div className="mt-4 text-center">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                Pas encore de compte ?{' '}
+                {t('login.noAccount')}{' '}
                 <Link to="/register" className="text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-                  Créer un compte
+                  {t('common.createAccount')}
                 </Link>
               </p>
             </div>
@@ -161,7 +165,7 @@ const LoginPage = () => {
       <footer className="py-4 px-8">
         <div className="max-w-7xl mx-auto text-center">
           <p className="text-gray-600 dark:text-gray-400 text-xs">
-            © 2023 CoverMyLetter. Tous droits réservés.
+            {t('common.rights')}
           </p>
         </div>
       </footer>
